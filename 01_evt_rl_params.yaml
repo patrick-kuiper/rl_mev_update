@@ -1,0 +1,30 @@
+num_samples: 100 #100 num sample time steps
+num_channels: 1 #number of readings per examples (sensors)
+num_points: 1000000 # number of sample points
+start_samples: 0.1 #value to start sampling
+end_samples: 8 #value to end sampling
+
+freq: 1 #frequency
+amp: 1  # amplitude normal
+mean: 0  # amplitude extreme
+sigma: 0.1 # noise sigma for log normal dist
+
+input_dim_encode: 100 #100must be the same as "num_samples"
+hidden_dim_encode: 50
+output_dim_encode: 10 #this is the latent dimension size
+
+input_dim_decode: 10 #this is the latent dimension size
+hidden_dim_decode: 50
+output_dim_decode: 100 #100must be the same as "num_samples"
+
+num_epochs: 800
+learning_rate: 0.0001
+batchSize: 10000 #100
+shuffle: True
+
+plot_base_data: True
+output_data: "output_data" #name of ouput data file
+
+rate: 0.1 #MEV radial rate
+valid_size: 0.5
+standard_deviation: 100
