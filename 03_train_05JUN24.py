@@ -34,7 +34,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-from rl_evt_base_models import MyDataset, lstm, split_data, mlp, tensorize_list_of_tensors, get_factors, mlp_relu_noBatch, mlp_relu_layer
+from rl_evt_base_models import MyDataset, lstm, split_data, mlp, tensorize_list_of_tensors, get_factors, mlp_relu_noBatch, mlp_relu_batch
 from tqdm import tqdm
 import yaml
 import argparse
@@ -118,11 +118,11 @@ max_intervals = [noisy_trig_data[:, (t > max_data[i-1]) &
 traindata = MyDataset(noisy_trig_data[:,:num_samples_train], noisy_trig_data[:,:num_samples_train])
 trainloader = torch.utils.data.DataLoader(traindata, batch_size = batchSize, shuffle = True)
 
-model_encode_min = mlp_relu_layer(input_dim = num_samples_train, 
+model_encode_min = mlp_relu_noBatch(input_dim = num_samples_train, 
                     hidden_dim = hidden_dim_encode, 
                     output_dim = output_dim_encode).to(device)
 
-model_decode_min = mlp_relu_layer(input_dim = input_dim_decode, 
+model_decode_min = mlp_relu_noBatch(input_dim = input_dim_decode, 
                     hidden_dim = hidden_dim_decode, 
                     output_dim = num_samples_train).to(device)
 
@@ -187,12 +187,19 @@ for t in tqdm(range(num_epochs)):
         loss_extreme.backward()
         optimizer.step()
         lr_scheduler.step()
-    torch.save(model_encode_min.state_dict(), model_folder + "/model_encode_min_bs{}_rt{}_sig{}_ep{}_hd{}.pt".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
-    torch.save(model_decode_min.state_dict(), model_folder + "/model_decode_min_bs{}_rt{}_sig{}_ep{}_hd{}.pt".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
+
         
     loss_hist.append(loss_extreme)
+    if t%50 == 0:
+        print("On iteraton ", t, " ...saving model and plotting loss.")
+        torch.save(model_encode_min.state_dict(), model_folder + "/model_encode_min_bs{}_rt{}_sig{}_ep{}_hd{}.pt".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
+        torch.save(model_decode_min.state_dict(), model_folder + "/model_decode_min_bs{}_rt{}_sig{}_ep{}_hd{}.pt".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
+        
+        plt.plot(torch.log(tensorize_list_of_tensors(loss_hist)))
+        plt.savefig(plot_folder + "loss_bs{}_rt{}_sig{}_ep{}_hd{}.pdf".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
+        plt.close() 
     
-with open(data_folder + "Loss_data_pts{}_mn{}_sg{}.p".format(num_points, mean, sigma), 'wb') as f: 
+with open(data_folder + "loss_data_pts{}_mn{}_sg{}_hd{}.p".format(num_points, mean, sigma, output_dim_encode), 'wb') as f: 
     pickle.dump(tensorize_list_of_tensors(loss_hist), f)
     
 torch.save(model_encode_min.state_dict(), model_folder + "/model_encode_min_bs{}_rt{}_sig{}_ep{}_hd{}.pt".format(batchSize, rate, sigma, num_epochs, output_dim_encode))
